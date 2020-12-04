@@ -1,18 +1,25 @@
-import socket
+#!/usr/bin/env python3
 import os
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-os.system('cls')
-
-#should I promp to point to the file name?
+import time
+from subprocess import Popen, DEVNULL
+				  
 print('Loading the contents of "hosts.txt" file...')
 
 f = open ("hosts.txt")
 
+p = {} # ip -> process
 for line in f:
-    HOST = line.strip()
-    rep = os.system('ping -c 4' + HOST)
-    if rep == 0:
-        print ("server is up" ,HOST)
-    else:
-        print ("server is down" ,HOST)
-print("Ping of the hosts has completed")
+    HOST = line.strip()										  												
+    p[HOST] = Popen(['ping', '-n', '-w5', '-c3', HOST], stdout=DEVNULL)								
+
+while p:
+    for HOST, proc in p.items():
+        if proc.poll() is not None: # ping finished
+            del p[HOST] # remove from the process list
+            if proc.returncode == 0:
+                print('%s alive' % HOST)
+            elif proc.returncode == 1:
+                print('%s down' % HOST)
+            else:
+                print('%s error' % HOST)
+            break
